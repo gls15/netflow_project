@@ -9,14 +9,22 @@ def sql_connection():
 
 def sql_table(con):
     cursorObj = con.cursor()
-    cursorObj.execute("CREATE TABLE IF NOT EXISTS file_access(config_file text, report_file text, pwd_hash blob, iv blob, pad integer, PRIMARY KEY(report_file))")
+    cursorObj.execute("CREATE TABLE IF NOT EXISTS file_access(config_file text, report_file text, pwd_hash blob, iv blob, pad integer, UNIQUE(config_file, report_file))")
     con.commit()
 
 def sql_insert(con, entities):
     cursorObj = con.cursor()
-    cursorObj.execute("UPDATE OR IGNORE file_access SET config_file = ?, report_file = ?, pwd_hash = ?, iv = ?, pad = ?", entities)
-    cursorObj.execute("INSERT OR IGNORE INTO file_access(config_file, report_file, pwd_hash, iv, pad) VALUES(?, ?, ?, ?, ?)", entities)
+    try:
+        cursorObj.execute("INSERT INTO file_access(config_file, report_file, pwd_hash, iv, pad) VALUES(?, ?, ?, ?, ?)", entities)
+    except sqlite3.Error:
+        cursorObj.execute("UPDATE file_access SET pwd_hash = ?, iv = ?, pad = ? WHERE (config_file = ? AND report_file = ?)", entities[-3:]+entities[:2])
     con.commit()
+
+def print_table(con):
+    cursorObj = con.cursor()
+    with con:
+        cursorObj.execute("SELECT * FROM file_access")
+        print(cursorObj.fetchall())
 
 def sql_fetch(con, filename):
     cursorObj = con.cursor()

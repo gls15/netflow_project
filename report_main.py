@@ -103,7 +103,7 @@ def generate_aggregate(specs, config_folder, report_folder):
             else:
                 total[item][0] += score
             if type(score) is int:
-                score = str(score)
+                score = "Pass" if score == 1 else "Fail"
             if type(score) is tuple:
                 score = (str(score[0])+'/'+str(score[1])+" ("+
                          str(round((score[0] / score[1]) * 100, 2))+"%)")
@@ -123,7 +123,8 @@ def individual(specs):
     if not specs["local"]:
         remove_known_host(specs)
     resultText = ""
-    rubric = {90: "Excellent",
+    rubric = {100: "Excellent",
+              90: "Excellent",
               80: "Good",
               70: "Fair",
               60: "Poor",
@@ -139,7 +140,7 @@ def individual(specs):
         if "Score" in netflow_results:
             specs["Score"]["NetFlow"] = netflow_results["Score"]
             netflow_results["Score"] = round((netflow_results["Score"][0] \
-                                              / netflow_results["Score"][1]) * 100, 2)
+                                            / netflow_results["Score"][1]) * 100, 2)
             resultText += "Suggested Score: "+str(netflow_results["Score"])+"% ("
             if netflow_results["Score"] // 10 * 10 in rubric:
                 scoreText = rubric[netflow_results["Score"] // 10 * 10]

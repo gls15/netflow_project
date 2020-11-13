@@ -30,7 +30,7 @@ def write_report(config_file, report_file, report_text, results_csv, pwd=None):
     if pwd:
         row = [config_file, report_file, pwd_hash, iv, pad]
     else:
-        row = [config_file, report_file, report_text, iv, 0]
+        row = [config_file, report_file, report_text, iv, -1]
     sql_insert(con, row)
     con.close()
 
@@ -39,6 +39,7 @@ def read_report(report_file, pwd=None):
         pwd_hash = hashlib.sha256(
                     hashlib.sha3_512(
                      pwd.encode()).hexdigest().encode()).digest()
+
         mode = AES.MODE_CBC
     
     con = sql_connection()
@@ -50,11 +51,11 @@ def read_report(report_file, pwd=None):
         iv = row[3]
         plain, csv = row[2].split(str(iv))
         return plain, csv
-    p_hash = row[2]
+    stored_pwd = row[2]
     iv = row[3]
     pad = row[4]
 
-    if pwd_hash == p_hash:
+    if stored_pwd == pwd_hash:
         with open(report_file, "rb") as rf:
             decryptor = AES.new(pwd_hash, mode, IV=iv)
             plain = decryptor.decrypt(rf.read())[:-pad].decode()
@@ -63,3 +64,10 @@ def read_report(report_file, pwd=None):
     else:
         return None
 
+def check_report(report_file):
+    con = sql_connection()
+    row = sql_fetch(con, report_file)
+    con.close()
+    if row[-1] == -1:
+        return False
+    return True

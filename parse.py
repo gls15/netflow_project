@@ -213,45 +213,54 @@ def http(sections):
     return results
 
 def acl(lines):
-    regex = {"permit_ip": re.compile("^access-list (.*) permit ip"),
-            "permit_tcp_any": re.compile("^access-list (.*) permit tcp any"),
-            "permit_udp_any": re.compile("^access-list (.*) permit udp any"),
-            "telnet_1": re.compile("permit (.*) eq telnet"),
-            "telnet_2": re.compile("permit (.*) eq 23"),
-            "tftp_1": re.compile("permit (.*) eq tftp"),
-            "tftp_2": re.compile("permit (.*) eq 69"),
-            "ftp_1": re.compile("permit (.*) eq ftp"),
-            "ftp_2": re.compile("permit (.*) eq 20"),
-            "ftp_3": re.compile("permit (.*) eq 21")}
+    regex = {"permit_ip": re.compile("access-list (.*) permit ip"),
+            "permit_tcp_any": re.compile("access-list (.*) permit tcp any"),
+            "permit_udp_any": re.compile("access-list (.*) permit udp any"),
+            "telnet": re.compile("access-list (.*) permit (.*) eq (telnet|23)"),
+            "tftp": re.compile("access-list (.*) permit (.*) eq (tftp|69)"),
+            "ftp": re.compile("access-list (.*) permit (.*) eq (ftp|20|21)"),
+            "loc-srv": re.compile("access-list (.*) permit (.*) eq (loc-srv|135)"),
+            "profile": re.compile("access-list (.*) permit (.*) eq (profile|136)"),
+            "netbios-ns": re.compile("access-list (.*) permit (.*) eq (netbios-ns|137)"),
+            "netbios-dgm": re.compile("access-list (.*) permit (.*) eq (netbios-dgm|138)"),
+            "netbios-ss": re.compile("access-list (.*) permit (.*) eq (netbios-ss|139)")}
 
     results = { "Line": [], "Entry": [] }
-
-    if specs["local"]:
-        with open(specs["config"], 'r') as f:
-            lines = f.readlines()
-    else:
-        lines = get_sections_remote(specs)
 
     for i in range(0, len(lines)):
         if (regex["permit_ip"].search(lines[i]) or
             regex["permit_tcp_any"].search(lines[i]) or
             regex["permit_udp_any"].search(lines[i]) or
-            regex["telnet_1"].search(lines[i]) or
-            regex["telnet_2"].search(lines[i]) or
-            regex["tftp_1"].search(lines[i]) or
-            regex["tftp_2"].search(lines[i]) or
-            regex["ftp_1"].search(lines[i]) or
-            regex["ftp_2"].search(lines[i]) or
-            regex["ftp_3"].search(lines[i])):
+            regex["telnet"].search(lines[i]) or
+            regex["tftp"].search(lines[i]) or
+            regex["ftp"].search(lines[i]) or
+            regex["loc-srv"].search(lines[i]) or
+            regex["profile"].search(lines[i]) or
+            regex["netbios-ns"].search(lines[i]) or
+            regex["netbios-dgm"].search(lines[i]) or
+            regex["netbios-ss"].search(lines[i])):
             results["Line"].append(str(i+1))
-            results["Entry"].append(lines[i].strip('\n'))
-
+            results["Entry"].append(lines[i].strip().strip('\n'))
+        if results["Entry"]:
+            while not all(len(s) <= 100 for s in results["Entry"][-1].split('\n')):
+                results["Entry"][-1] = fix_width(results["Entry"][-1], 100)
+        
     if not results["Entry"]:
         results["Score"] = "Pass"
     else:
         results["Score"] = "Fail"
 
     return results
+
+def fix_width(s, max_len):
+    l = s.split('\n')
+    if len(l[-1]) > max_len:
+        i = max_len
+        for i in range(max_len, 0, -1):
+            if l[-1][i] == ' ':
+                break
+        l[-1] = l[-1][:i]+'\n'+l[-1][-len(l[-1])+i:]
+    return '\n'.join(l)
 
 def get_sections(lines):
     regex = {"section": re.compile("^!(.*)\n")}

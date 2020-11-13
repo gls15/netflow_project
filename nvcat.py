@@ -2,6 +2,32 @@
     NVCAT: A (N)etwork (V)isibility (C)onfiguration (A)nalysis (T)ool
     by Gabriel Siewert
     August 2020-December 2020
+
+    Stuff to do:
+        MAJOR:
+            - Add support for searching for SPAN
+                - Multiple src/dst?
+
+            - Add HTTP searching functionality front- and back-end
+                - Make sure regex is correct
+
+            - Add support for ACL analysis
+                - Negation regex???
+
+            - If using remote retrieval, remove device from list of known hosts after
+              retrieval
+                - Haven't tested this yet
+
+            - Clean up code so that it looks nice for GitHub
+
+            - Add "How To" button and page content
+                - This is absolutely not a priority
+                - Can probably take the idea for this page and just
+                  make it the GitHub README
+
+        MINOR:
+            - Make it look nicer if you want
+            - Make sure this works in a Windows environment
 '''
 
 from datetime import datetime
@@ -448,18 +474,19 @@ class App():
         self.pathEntry["state"] = DISABLED
         self.dialogBtn["state"] = DISABLED
         self.specs["report"] = self.pathEntry.get()
-        if self.specs["passwd"]:
+        file_encrypted = check_report(self.specs["report"])
+        if not file_encrypted:
+            readPwd = None
+        else:
             readPwd = askstring("Decrypt Report",
                                  "Enter password to decrypt report contents.",
                                  parent=self.root, show='*')
-        else:
-            readPwd = None
         report = read_report(self.specs["report"], readPwd)
         if report:
             report, csv = report
             self.readReportBtn["state"] = DISABLED
             self.reportFlag = True
-            if self.specs:
+            if "type" in self.specs:
                 self.generateReportBtn["state"] = DISABLED
             self.reportText = report
             self.reportCSV = csv
